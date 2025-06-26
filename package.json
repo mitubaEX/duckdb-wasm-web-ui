@@ -1,0 +1,38 @@
+{
+  "name": "duckdb-wasm-ui",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "DuckDB WASM UI for browser-based SQL queries with Parquet support",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "serve": "vite preview --port 3000",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@codemirror/lang-sql": "^6.8.0",
+    "@codemirror/state": "^6.4.1",
+    "@codemirror/view": "^6.36.0",
+    "@duckdb/duckdb-wasm": "^1.29.1-dev250.0",
+    "@replit/codemirror-vim": "^6.3.0",
+    "codemirror": "^6.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "terser": "^5.43.1",
+    "typescript": "^5.8.3",
+    "vite": "^6.0.3"
+  },
+  "keywords": [
+    "duckdb",
+    "wasm",
+    "sql",
+    "parquet",
+    "browser",
+    "database"
+  ],
+  "author": "",
+  "license": "Apache-2.0"
+}
