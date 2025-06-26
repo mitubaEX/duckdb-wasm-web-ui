@@ -2,8 +2,8 @@ import { sql } from '@codemirror/lang-sql'
 import { EditorState } from '@codemirror/state'
 import { panels, showPanel } from '@codemirror/view'
 import * as duckdb from '@duckdb/duckdb-wasm'
-import duckdb_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?worker'
-import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url'
+import duckdb_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?worker'
+import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url'
 import { vim } from '@replit/codemirror-vim'
 import { EditorView, basicSetup } from 'codemirror'
 
@@ -172,28 +172,25 @@ class DuckDBUI {
       connectBtn.textContent = 'Connecting...'
       connectBtn.disabled = true
 
-      // Manual bundles configuration
-      const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
-        mvp: {
-          mainModule: duckdb_wasm,
-          mainWorker: duckdb_worker
-        },
-        eh: {
-          mainModule: duckdb_wasm,
-          mainWorker: duckdb_worker
-        }
-      }
+      // Use jsDelivr CDN for WASM files to avoid size limits
+      const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
 
       // Select bundle based on browser capabilities
-      const bundle = await duckdb.selectBundle(MANUAL_BUNDLES)
+      const bundle = await duckdb.selectBundle(JSDELIVR_BUNDLES)
 
       // Create worker
-      const worker = bundle.mainWorker ? new bundle.mainWorker!() : new duckdb_worker()
+      const worker_url = URL.createObjectURL(
+        new Blob([`importScripts("${bundle.mainWorker}");`], {type: 'text/javascript'})
+      );
+      const worker = new Worker(worker_url)
       const logger = new duckdb.ConsoleLogger()
 
       // Initialize database
       this.db = new duckdb.AsyncDuckDB(logger, worker)
       await this.db.instantiate(bundle.mainModule, bundle.pthreadWorker)
+      
+      // Clean up worker URL
+      URL.revokeObjectURL(worker_url)
 
       // Connect to database
       this.conn = await this.db.connect()
