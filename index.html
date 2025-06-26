@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DuckDB WASM UI - Browser-based SQL Analytics</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2563eb;
+            margin-bottom: 8px;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 16px;
+        }
+
+        h3 {
+            font-size: 1.25rem;
+            margin-bottom: 12px;
+            color: #374151;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            background-color: #2563eb;
+            color: white;
+        }
+
+        button:hover {
+            background-color: #1d4ed8;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+
+        #result {
+            margin-top: 20px;
+            font-family: Arial, sans-serif;
+        }
+
+        #result table {
+            border-collapse: collapse;
+            border: 2px solid #ddd;
+            table-layout: auto;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        #result table th,
+        #result table td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            text-align: left;
+        }
+
+        #result table th {
+            background-color: #f1f5f9;
+            font-weight: 600;
+        }
+
+        #result table tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+
+        #result table tr:hover {
+            background-color: #e2e8f0;
+        }
+
+        #count {
+            margin-top: 10px;
+            font-weight: 500;
+            color: #64748b;
+        }
+
+        #editor {
+            margin-top: 20px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 500;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status.connected {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        .status.connecting {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .status.error {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        .file-upload {
+            position: relative;
+        }
+
+        .file-upload input[type="file"] {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .file-upload label {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            background-color: #6b7280;
+            color: white;
+            display: inline-block;
+        }
+
+        .file-upload label:hover {
+            background-color: #4b5563;
+        }
+
+        .tables-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+        }
+
+        .tables-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .table-card {
+            padding: 12px 16px;
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 120px;
+        }
+
+        .table-card:hover {
+            background: #e2e8f0;
+            border-color: #94a3b8;
+        }
+
+        .table-card.selected {
+            background: #dbeafe;
+            border-color: #2563eb;
+        }
+
+        .table-name {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 4px;
+        }
+
+        .table-info {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .aggregation-helper {
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+        }
+
+        .helper-controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .helper-controls select {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .helper-controls button {
+            background-color: #059669;
+            font-size: 12px;
+            padding: 8px 16px;
+        }
+
+        .helper-controls button:hover {
+            background-color: #047857;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 16px 0;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .pagination-info {
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        .pagination-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .pagination-controls button {
+            padding: 6px 12px;
+            font-size: 12px;
+            background-color: #64748b;
+        }
+
+        .pagination-controls button:hover:not(:disabled) {
+            background-color: #475569;
+        }
+
+        .pagination-controls select {
+            padding: 4px 8px;
+            font-size: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>DuckDB WASM UI</h1>
+        <h2>Browser-based SQL Analytics with Parquet Support</h2>
+        <h3 id="duckdb-version"></h3>
+        <h3 id="opfs-status"></h3>
+        
+        <div class="controls">
+            <button id="connect-btn">Connect to DuckDB</button>
+            <div class="file-upload">
+                <input type="file" id="file-input" accept=".csv,.json,.parquet" multiple>
+                <label for="file-input">Upload Files</label>
+            </div>
+        </div>
+
+        <div class="tables-section" id="tables-section" style="display: none;">
+            <h3>Available Tables</h3>
+            <div class="tables-list" id="tables-list">
+                <!-- Tables will be displayed here -->
+            </div>
+        </div>
+
+        <div class="aggregation-helper" id="aggregation-helper" style="display: none;">
+            <h3>Quick Aggregation</h3>
+            <div class="helper-controls">
+                <label>Table:</label>
+                <select id="agg-table-select">
+                    <option value="">Select table...</option>
+                </select>
+                
+                <label>Group By:</label>
+                <select id="agg-column-select">
+                    <option value="">Select column...</option>
+                </select>
+                
+                <label>Aggregate:</label>
+                <select id="agg-function-select">
+                    <option value="COUNT(*)">Count rows</option>
+                    <option value="SUM">Sum</option>
+                    <option value="AVG">Average</option>
+                    <option value="MIN">Minimum</option>
+                    <option value="MAX">Maximum</option>
+                </select>
+                
+                <select id="agg-value-column" style="display: none;">
+                    <option value="">Select column...</option>
+                </select>
+                
+                <label>Order By:</label>
+                <select id="agg-order-column">
+                    <option value="">No ordering</option>
+                </select>
+                
+                <select id="agg-order-direction">
+                    <option value="ASC">Ascending</option>
+                    <option value="DESC">Descending</option>
+                </select>
+                
+                <button id="generate-query">Generate Query</button>
+            </div>
+        </div>
+        
+        <div id="pagination" class="pagination" style="display: none;">
+            <div class="pagination-info" id="pagination-info"></div>
+            <div class="pagination-controls">
+                <button id="first-page">First</button>
+                <button id="prev-page">Previous</button>
+                <span id="page-info"></span>
+                <button id="next-page">Next</button>
+                <button id="last-page">Last</button>
+                <select id="page-size">
+                    <option value="10">10 rows</option>
+                    <option value="25" selected>25 rows</option>
+                    <option value="50">50 rows</option>
+                    <option value="100">100 rows</option>
+                </select>
+            </div>
+        </div>
+        
+        <div id="result"></div>
+        <div id="count"></div>
+        
+        <div id="editor"></div>
+    </div>
+
+    <script type="module" src="./src/main.ts"></script>
+</body>
+</html>
