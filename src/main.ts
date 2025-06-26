@@ -666,7 +666,7 @@ class DuckDBUI {
     }
   }
 
-  private generateAggregationQuery() {
+  private async generateAggregationQuery() {
     const aggTableSelect = document.getElementById('agg-table-select') as HTMLSelectElement
     const aggColumnSelect = document.getElementById('agg-column-select') as HTMLSelectElement
     const aggFunctionSelect = document.getElementById('agg-function-select') as HTMLSelectElement
@@ -728,7 +728,9 @@ ORDER BY ${actualOrderColumn} ${orderDirection}`
       this.editor.setState(state)
     }
     
-    this.showSuccess('Aggregation query generated! Press Ctrl+Enter to execute.')
+    // Execute the query immediately
+    await this.executeQuery(query)
+    this.showSuccess('Aggregation query generated and executed!')
   }
 
 
